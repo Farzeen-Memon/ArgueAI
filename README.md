@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # DebateAI - AI Debate Club Platform
 
 A production-grade AI-powered debate platform where multiple AI agents engage in structured, real-time debates on any topic.
@@ -224,3 +225,7 @@ MIT License - see LICENSE file for details
 - Documentation: [docs.debateai.com](https://docs.debateai.com)
 - Issues: [GitHub Issues](https://github.com/your-org/debateai/issues)
 - Discord: [Community Server](https://discord.gg/debateai)
+=======
+# ArgueAI
+AI-powered multi-agent debate platform with real-time argument generation, fact-checking, moderation, and live debate orchestration using Next.js, FastAPI, and LangGraph.
+>>>>>>> c95628f51d7c174872ac6df9fd56032692f115fa
