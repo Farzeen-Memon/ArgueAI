@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-py"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DebateStyle {
+  FORMAL
+  AGGRESSIVE
+  ACADEMIC
+  FRIENDLY
+}
+
+enum DebateStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AgentRole {
+  MODERATOR
+  PRO_ARGUMENT
+  CON_ARGUMENT
+  FACT_CHECKER
+  JUDGE
+}
+
+enum FactCheckStatus {
+  VERIFIED
+  MISLEADING
+  UNSUPPORTED
+  PENDING
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  clerkId     String   @unique @map("clerk_id")
+  email       String   @unique
+  name        String
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  // Relations
+  debates     Debate[]
+  analytics   Analytics[]
+
+  @@map("users")
+}
+
+model Debate {
+  id                Int          @id @default(autoincrement())
+  userId            Int          @map("user_id")
+  topic             String
+  style             DebateStyle
+  status            DebateStatus @default(PENDING)
+  rounds            Int          @default(3)
+  tone              String        @default("formal")
+  agentPersonalities Json?        @map("agent_personalities")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime?     @updatedAt @map("updated_at")
+
+  // Relations
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rounds     DebateRound[]
+  messages   Message[]
+  factChecks FactCheck[]
+  analytics  Analytics?
+
+  @@map("debates")
+}
+
+model DebateRound {
+  id          Int      @id @default(autoincrement())
+  debateId    Int      @map("debate_id")
+  roundNumber Int      @map("round_number")
+  status      String   @default("active")
+  summary     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  // Relations
+  debate   Debate   @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("debate_rounds")
+}
+
+model Agent {
+  id           Int       @id @default(autoincrement())
+  name         String
+  role         AgentRole
+  personality  String?
+  systemPrompt String    @map("system_prompt")
+  avatarUrl    String?   @map("avatar_url")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  // Relations
+  messages Message[]
+
+  @@map("agents")
+}
+
+model Message {
+  id           Int      @id @default(autoincrement())
+  debateId     Int      @map("debate_id")
+  roundId      Int      @map("round_id")
+  agentId      Int      @map("agent_id")
+  content      String
+  messageType  String   @default("argument") @map("message_type")
+  tokenCount   Int      @default(0) @map("token_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  debate     Debate      @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  round      DebateRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  agent      Agent       @relation(fields: [agentId], references: [id])
+  factChecks FactCheck[]
+
+  @@map("messages")
+}
+
+model FactCheck {
+  id              Int           @id @default(autoincrement())
+  debateId        Int           @map("debate_id")
+  messageId       Int           @map("message_id")
+  claim           String
+  status          FactCheckStatus @default(PENDING)
+  confidenceScore Int            @default(0) @map("confidence_score")
+  sources         Json?          // List of source URLs
+  reasoning       String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime?      @updatedAt @map("updated_at")
+
+  // Relations
+  debate  Debate  @relation(fields: [debateId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@map("fact_checks")
+}
+
+model Analytics {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @map("user_id")
+  debateId         Int      @unique @map("debate_id")
+  totalTokens      Int      @default(0) @map("total_tokens")
+  totalCost        Float    @default(0.0) @map("total_cost")
+  durationSeconds  Int      @default(0) @map("duration_seconds")
+  participantCount Int      @default(0) @map("participant_count")
+  factCheckCount  Int      @default(0) @map("fact_check_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  debate Debate @relation(fields: [debateId], references: [id], onDelete: Cascade)
+
+  @@map("analytics")
+}
